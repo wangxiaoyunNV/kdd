@@ -4,6 +4,7 @@ import torch
 from torch.nn import Linear, LayerNorm, ReLU, Dropout
 import torch.nn.functional as F
 import torchmetrics.functional as MF
+from torchmetrics import AUROC
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 import scipy.sparse as sp
@@ -25,7 +26,9 @@ def evaluate(model, graph, dataloader):
             x = blocks[0].srcdata['feat']
             ys.append(blocks[-1].dstdata['label'])
             y_hats.append(model(blocks, x))
-    return MF.accuracy(torch.cat(y_hats), torch.cat(ys))
+    #return MF.accuracy(torch.cat(y_hats), torch.cat(ys))
+    auroc = AUROC(num_classes=2)
+    return auroc (torch.cat(y_hats), torch.cat(ys))
 
 def layerwise_infer(device, graph, nid, model, batch_size):
     model.eval()
@@ -33,7 +36,10 @@ def layerwise_infer(device, graph, nid, model, batch_size):
         pred = model.inference(graph, device, batch_size) # pred in buffer_device
         pred = pred[nid]
         label = graph.ndata['label'][nid].to(pred.device)
-        return MF.accuracy(pred, label)
+        #return MF.accuracy(pred, label)
+        auroc = AUROC(num_classes=2)
+        return auroc(torch.cat(y_hats), torch.cat(ys))
+
 
 def train(args, device, g, train_idx, val_idx, model):
     # create sampler & dataloader
@@ -62,9 +68,8 @@ def train(args, device, g, train_idx, val_idx, model):
             loss.backward()
             opt.step()
             total_loss += loss.item()
-        acc = evaluate(model, g, val_dataloader)
-        print("Epoch {:05d} | Loss {:.4f} | Accuracy {:.4f} "
-              .format(epoch, total_loss / (it+1), acc.item()))
+        auroc = evaluate(model, g, val_dataloader)
+        print("Epoch {:05d} | Loss {:.4f} | AUROC {:.4f} ",(epoch, total_loss / (it+1), auroc))
 
 if __name__ == '__main__':
 
@@ -80,7 +85,7 @@ if __name__ == '__main__':
     valid_idx = torch.LongTensor(valid_idx)
     print (X_train.size(), X_valid.size())
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", default='mixed', choices=['cpu', 'mixed', 'puregpu'],
+    parser.add_argument("--mode", default='puregpu', choices=['cpu', 'mixed', 'puregpu'],
                         help="Training mode. 'cpu' for CPU training, 'mixed' for CPU-GPU mixed training, "
                              "'puregpu' for pure-GPU training.")
     args = parser.parse_args()
