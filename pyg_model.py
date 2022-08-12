@@ -15,7 +15,7 @@ class Net(torch.nn.Module):
         x, edge_index = data.x, data.edge_index
         x = self.conv1(x, edge_index)
         x = F.relu(x)
-        x = F.dropout(x, p=0.1, training=self.training)
+        x = F.dropout(x, p=0.5, training=self.training)
         x = self.conv4(x, edge_index)
 
         return F.sigmoid(x)

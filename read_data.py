@@ -3,16 +3,13 @@ import pandas as pd
 import torch
 from torch.nn import Linear, LayerNorm, ReLU, Dropout
 import torch.nn.functional as F
-import dgl
 from sklearn.metrics import roc_auc_score
 import scipy.sparse as sp
 from torch_geometric.nn import ChebConv, NNConv, DeepGCNLayer, GATConv, DenseGCNConv, GCNConv, GraphConv
 from torch_geometric.data import Data, DataLoader
 import warnings
 warnings.filterwarnings("ignore")
-
-import pandas as pd
-from pyg_model import Net 
+ 
 
 def process_ellipitc(df_features, df_edges, df_classes):
 
